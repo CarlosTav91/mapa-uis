@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>INGENIO</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+		<link rel="shortcut icon" type="image/x-icon" href="images/logo.ico" />
+		
+		<!-- HOJAS DE ESTILOS -->
+		<link rel="stylesheet" href="css/leaflet.css" />
+		<link rel="stylesheet" type="text/css" href="css/L.Control.ZoomBar.css"/>   <!-- CONTROL DE BARRAS  DE ZOOM -->
+		<link rel="stylesheet" href="css/L.Control.Locate.min.css" />	<!-- CONTROL externo de lozalizacion -->
+		<link href="css/font-awesome.min.css" rel="stylesheet">	<!-- CONTROL externo de lozalizacion -->
+		<link rel="stylesheet" href="css/L.Control.MousePosition.css" /> 	<!-- CONTROL externo de coordenadas -->
+		<link rel="stylesheet" href="css/Control.MiniMap.css" />  <!-- CONTROL externo minimapa -->
+		<link rel="stylesheet" href="css/leaflet.draw.css"/>
+		<link rel="stylesheet" href="css/MarkerCluster.css" />       <!--MarkerCluster -->
+		<link rel="stylesheet" href="css/MarkerCluster.Default.css" /> <!--MarkerCluster -->
+		<link rel="stylesheet" href="css/leaflet-search.css" />   <!--Busqueda -->
+		
+		
+		<!-- JavaScript externo -->
+		<script src="js/leaflet.js"></script>
+		<script type="text/javascript" src="js/L.Control.ZoomBar.js"></script> <!-- ARCHIVO DE JAVA SCRIPT PARA EL ZOOM -->
+		<script src="js/L.Control.Locate.js" ></script> <!-- ARCHIVO DE JAVA SCRIPT PARA la Geolocalizacion -->
+		<script src="js/L.Control.MousePosition.js"></script> <!-- CONTROL externo de coordenadas en javascript -->
+		<script src="js/Control.MiniMap.js" type="text/javascript"></script>  <!-- CONTROL externo minimapa -->
+		<script src="js/leaflet.draw.js"></script>
+		<script src="js/leaflet.markercluster.js"></script>   <!--MarkerCluster -->
+		<script src="js/leaflet-search.js"></script>  <!--Busqueda -->
+		
+		
+		<!-- Archivo geoson  -->
+		<script src="js/coordenadas.js"></script>
+		<script src="js/atributosuis.js"></script>
+
+
+		<style>
+			body {padding:0; margin:0}
+			html, body, #map {height: 100%;}
+			#boton {position: absolute; left: 200px; top: 10px; z-index: 500}
+			
+		</style> 
+	</head> 
+	<body>
+	
+	<div id ="map"></div>
+	
+	<div id ="map"> </div> 
+	<div id ="boton">
+			<a href='#' id='export'>Exportar</a>
+		</div>
+	
+
+		 
+		<!-- Código de javascript embebido -->
+	<script>
+		// ************************PROPIEDADES GENERALES DEL MAPA *********************************************//
+		
+			var map = L.map('map', {
+				center: [7.140453829, -73.1196141],
+				zoom: 18,
+				zoomControl:false
+				/*maxBounds:[[7.138351,-73.123793],[7.142822,-73.115585]], //DETERMINO EL AREA
+				minZoom:18,                                              //EL MINIMO ZOOM PERMITIDO
+				maxZoom:21	*/											 //ESTE ES EL MAXIMOM PERMITIDO
+				
+				});
+		
+		//************************ PROPIEDADES DE MAPA BASE **************************************************//
+				
+				
+			var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22}).addTo(map);
+			
+			
+		//************************ PROPIEDADES DE COORDENADAS **************************************************//	
+		/*	map.on('click' , function (e) {
+					alert("Latitud : " + e.latlng.lat.toString() + '\n' + "Longitud" + e.latlng.lng.toString() );
+					alert(map.getZoom());
+			});*/
+			
+		//************************ PROPIEDADES DE IMAGENES **************************************************//
+		
+		var imagenUrl = 'images/UISbb.png';
+		var limitesimagen = [
+		[7.138593159,-73.123719307],[7.143448229,-73.115310847]];
+		//[[7.138351,-73.123793],[7.142822,-73.115585]];
+		
+		var imagenU = L.imageOverlay(imagenUrl,limitesimagen,{
+		opacity:0.9,
+		attribution:'UNIVERSIDAD INDUSTRIAL DE SANTANDER'}).addTo(map);
+		
+		//************************ VARIABLE PARA AGREGAR EL ZOOM AL MAPA  **************************************************//
+		
+		var barrazoom = new L.Control.ZoomBar({position:'topleft'}).addTo(map);
+		
+		//************************ VARIABLE PARA AGREGAR LA UBICACIÓN AL MAPA **************************************************//
+			
+		var ubicacion = L.control.locate({
+				position: 'bottomright',
+				strings: {
+					title: "Estoy aqui"
+				}
+			}).addTo(map);
+		
+		//************************ FUNCIONES PARA AGREGAR LAS COORDENADAS EN EL GEOPORTAL **************************************************//
+		//visualización de coordenadas del mouse
+		L.control.mousePosition().addTo(map);
+	
+		//barra de escala
+		L.control.scale().addTo(map);
+		
+		
+		
+		//************************ AGREGAR UN MINI MAPA **************************************************//
+		//minimap
+		var osm2 = new L.TileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {minZoom: 0, maxZoom: 13});
+		var miniMap = new L.Control.MiniMap(osm2, { toggleDisplay: true }).addTo(map);
+		
+		//************************ HERRAMIENTAS DE DIBUJO Y EXPORTAR **************************************************//
+		var drawnItems = new L.featureGroup();
+		map.addLayer(drawnItems);
+		
+		var drawControl = new L.Control.Draw({
+			position: 'topright',
+			draw: {
+            circle: true,
+            circlemarker: true,
+            marker: true,
+            rectangle: true,
+            polyline: true,
+            polygon: true
+       },
+			edit: {
+				featureGroup: drawnItems
+			}
+		});	
+		
+		map.addControl(drawControl);
+		
+		map.on('draw:created', function (e) {
+			var layer = e.layer,
+				feature = layer.feature = layer.feature || {};
+			
+			feature.type = feature.type || "Feature"; 
+			
+			var props = feature.properties = feature.properties || {};
+				
+				props.autor = "Richard Flores";
+				
+				drawnItems.addLayer(layer);
+		});
+		
+		
+		//Exportar a un archivo local
+		document.getElementById('export').onclick = function(e) {
+		// Extraer GeoJson desde featureGroup
+			var data = drawnItems.toGeoJSON();
+			// Stringify the GeoJson
+			var convertedData = 'text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data));
+			// Crear exportacion
+			document.getElementById('export').setAttribute('href', 'data:' + convertedData);
+			document.getElementById('export').setAttribute('download', 'dibujo.geojson');
+			}
+		
+		//************************ LLAMAR UN ARCHIVO JSON  **************************************************//
+		
+		
+		var datos = L.layerGroup().addTo(map);
+		
+		var featuresLayer = L.geoJSON(atributos, {
+				onEachFeature: function(feature,marker) {
+					marker.bindPopup(feature.properties.coor_x);
+				}
+			}).addTo(map);
+			
+			datos.addLayer(featuresLayer);
+			
+			
+			
+		//************************ USAMOS EL CLOSTER PARA VER LOS DATOS  **************************************************//
+		
+		var markers = L.markerClusterGroup();
+		
+		markers.addLayer(featuresLayer);
+		
+		map.addLayer(markers);
+		
+		
+		//************************ CONTROL DE CAPAS **************************************************//
+		
+		var mapasBase = {
+		"Openstreetmap": osm
+		};
+		
+		//DECLARAMOS UNA VARIABLE PARA EL CONTROL DE LAS CAPAS DE NUESTRO MAPA			
+		var capas= {
+			"imagen": imagenU,
+			"Puntos de Interes": puntosinteres	  };
+			
+		//CONTROL DE LOS MAPAS BASE Y CAPAS DE NUESTRO MAPA	
+		L.control.layers(mapasBase , capas,{
+			position: 'topleft', // 'topleft', 'bottomleft', 'bottomright'
+			collapsed: false // true
+		}).addTo(map);
+		
+		
+		//IMPLEMENTACION DEL MENU DE BUSQUEDA. 
+		var searchControl = new L.Control.Search({
+				layer: featuresLayer, 
+				propertyName: 'coor_x',
+				circleLocation:true,
+				initial: false,
+				zoom: 18,
+				collapsed: false
+			});
+			
+		map.addControl( searchControl );
+		
+		
+		
+	</script>
+	</body>
+</html> 
